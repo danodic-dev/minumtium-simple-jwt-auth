@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="minumtium_simple_jwt_auth-simple-jwt-auth",
+    name="minumtium_simple_jwt_auth",
     version="1.0.0",
     author="Danilo Guimaraes (danodic)",
     author_email="danilo@danodic.dev",
