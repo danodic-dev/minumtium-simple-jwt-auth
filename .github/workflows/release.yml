@@ -53,7 +53,7 @@ jobs:
           draft: false
           prerelease: false
       - name: Set python package name
-        run: echo "PACKAGE_FILENAME=./dist/minumtium_simple_jwt_auth-simple-jwt-auth-"$(echo $GITHUB_REF | cut -d'v' -f 2)".tar.gz" >> $GITHUB_ENV
+        run: echo "PACKAGE_FILENAME=./dist/minumtium_simple_jwt_auth-"$(echo $GITHUB_REF | cut -d'v' -f 2)".tar.gz" >> $GITHUB_ENV
       - name: Upload Python Package
         uses: actions/upload-release-asset@v1
         env:
@@ -64,7 +64,7 @@ jobs:
           asset_name: ${{ env.PACKAGE_FILENAME }}
           asset_content_type: application/gzip
       - name: Set python wheel name
-        run: echo "WHEEL_FILENAME=./dist/minumtium_simple_jwt_auth-simple-jwt-auth-"$(echo $GITHUB_REF | cut -d'v' -f 2)"-py3-none-any.whl" >> $GITHUB_ENV
+        run: echo "WHEEL_FILENAME=./dist/minumtium_simple_jwt_auth-"$(echo $GITHUB_REF | cut -d'v' -f 2)"-py3-none-any.whl" >> $GITHUB_ENV
       - name: Upload Python Wheel
         uses: actions/upload-release-asset@v1
         env:
