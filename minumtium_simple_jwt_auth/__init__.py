@@ -6,7 +6,7 @@ import bcrypt
 import jwt
 from minumtium.infra.authentication import AuthenticationAdapter, AuthenticationException
 from minumtium.modules.idm import Session, MAX_LOGIN_TRIALS, LOGIN_COOLDOWN_MINUTES
-from minumtium.modules.idm import UserRepository, NoUserFoundException
+from minumtium.modules.idm import UserRepository, NoUserFoundException, User
 
 
 class SimpleJwtAuthentication(AuthenticationAdapter):
@@ -16,6 +16,8 @@ class SimpleJwtAuthentication(AuthenticationAdapter):
     PASSWORD_CHARS = 12
     SESSION_DURATION_FORMAT = '%Y%m%d%H%M%S%f'
     ALGORITHM = 'HS256'
+    DEFAULT_USERNAME = 'minumtium'
+    DEFAULT_PASSWORD = 'minumtium'
 
     def __init__(self, config: Dict, user_repo: UserRepository):
         self.trials = None
@@ -29,10 +31,28 @@ class SimpleJwtAuthentication(AuthenticationAdapter):
         self.session_duration: int = config['session_duration_hours']
         self.user_repo: UserRepository = user_repo
         self.trials = {}
+        self._initialize_default_user()
+
+    def _initialize_default_user(self):
+        def user_list(user_repository: UserRepository):
+            return [user.username for user in user_repository.all()]
+
+        def has_default_user(user_repository: UserRepository):
+            return SimpleJwtAuthentication.DEFAULT_USERNAME not in user_list(user_repository)
+
+        def insert_default_user(user_repository: UserRepository):
+            entrypted_password = self.encrypt_password(SimpleJwtAuthentication.DEFAULT_PASSWORD)
+            user = User(username=SimpleJwtAuthentication.DEFAULT_USERNAME, encrypted_password=entrypted_password)
+            user_repository.save(user)
+
+        if has_default_user(self.user_repo):
+            insert_default_user(self.user_repo)
+            
 
     def validate_token(self, token: str) -> Session:
         try:
-            token_data = jwt.decode(token.encode('utf-8'), self.secret, algorithms=SimpleJwtAuthentication.ALGORITHM)
+            token_data = jwt.decode(token.encode(
+                'utf-8'), self.secret, algorithms=SimpleJwtAuthentication.ALGORITHM)
             token_expiration_date = token_data['expiration_date']
             token_username = token_data['username']
             token_user_id = token_data['userid']
@@ -50,7 +70,8 @@ class SimpleJwtAuthentication(AuthenticationAdapter):
                 expiration_date=self.__parse_expiration_date(token_expiration_date))
 
         except Exception as e:
-            raise AuthenticationException('Invalid authentication token provided.') from e
+            raise AuthenticationException(
+                'Invalid authentication token provided.') from e
 
     def __is_session_expired(self, expiration_date: str) -> bool:
         return self.__parse_expiration_date(expiration_date) < datetime.now()
@@ -62,7 +83,8 @@ class SimpleJwtAuthentication(AuthenticationAdapter):
         try:
             user = self.user_repo.get_by_username(username)
         except NoUserFoundException as e:
-            raise AuthenticationException('Invalid username and/or password.') from e
+            raise AuthenticationException(
+                'Invalid username and/or password.') from e
 
         self.__count_login_trial(username)
         if self.__is_allowed_to_login(username, password, user.encrypted_password):
@@ -114,10 +136,10 @@ class SimpleJwtAuthentication(AuthenticationAdapter):
 
     def is_valid_password(self, password: str) -> bool:
         return len(password) >= SimpleJwtAuthentication.PASSWORD_CHARS and \
-               any(char.islower() for char in password) and \
-               any(char.isupper() for char in password) and \
-               any(char.isdigit() for char in password) and \
-               any(char in punctuation for char in password)
+            any(char.islower() for char in password) and \
+            any(char.isupper() for char in password) and \
+            any(char.isdigit() for char in password) and \
+            any(char in punctuation for char in password)
 
     def get_password_criteria(self):
         return f'minimum of {SimpleJwtAuthentication.PASSWORD_CHARS} chars, at least 1 uppercase, 1 lowercase, a number and a symbol'

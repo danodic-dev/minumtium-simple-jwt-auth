@@ -1,3 +1,3 @@
-## minumtium simple jwt auth 1.0.0
+## minumtium simple jwt auth 1.0.1
 ### Added
-- Initial release.
+- Added setup of default user in case it does not exist.

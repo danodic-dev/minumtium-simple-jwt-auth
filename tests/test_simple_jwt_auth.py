@@ -52,8 +52,10 @@ def test_authenticate(secret_key, auth_adapter):
     assert decoded_token['username'] == 'valid'
     assert decoded_token['userid'] == '0'
 
-    parsed_date = datetime.strptime(decoded_token['expiration_date'], SimpleJwtAuthentication.SESSION_DURATION_FORMAT)
-    assert datetime.now() + timedelta(hours=auth_adapter.session_duration) - timedelta(minutes=1) < parsed_date
+    parsed_date = datetime.strptime(
+        decoded_token['expiration_date'], SimpleJwtAuthentication.SESSION_DURATION_FORMAT)
+    assert datetime.now() + timedelta(hours=auth_adapter.session_duration) - \
+        timedelta(minutes=1) < parsed_date
 
 
 @pytest.mark.parametrize('username, password', [('valid', 'invalid'),
@@ -112,7 +114,7 @@ def test_authenticate_after_trial_timeout(auth_adapter):
         auth_adapter.authenticate('valid', 'valid')
 
     auth_adapter.trials['valid']['timestamp'] = datetime.now() - \
-                                                timedelta(minutes=LOGIN_COOLDOWN_MINUTES, seconds=1)
+        timedelta(minutes=LOGIN_COOLDOWN_MINUTES, seconds=1)
     assert not auth_adapter._is_max_trials_expired('valid')
 
 
@@ -126,6 +128,10 @@ def test_password_criteria(auth_adapter):
                                       'twelvechars1!'])
 def test_password_criteria_negatove(password, auth_adapter):
     assert not auth_adapter.is_valid_password(password)
+
+
+def test_default_username_is_created(user_repository: UserRepository, auth_adapter):
+    assert 'minumtium' in [user.username for user in user_repository.all()]
 
 
 def generate_jwt_token(username: str, user_id: str, expiration: datetime, secret: str):
@@ -146,8 +152,12 @@ def secret_key():
 
 
 @pytest.fixture()
-def auth_adapter(secret_key, users_database_adapter):
+def user_repository(users_database_adapter):
     # noinspection PyTypeChecker
-    user_repo = UserRepository(users_database_adapter)
+    return UserRepository(users_database_adapter)
+
+
+@pytest.fixture()
+def auth_adapter(secret_key, user_repository):
     return SimpleJwtAuthentication({'jwt_key': secret_key,
-                                    'session_duration_hours': 6}, user_repo)
+                                    'session_duration_hours': 6}, user_repository)

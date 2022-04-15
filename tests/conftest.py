@@ -33,6 +33,11 @@ def users_database_adapter(users_database_data):
             raise DataNotFoundException()
 
         def insert(self, data: Dict) -> str:
+            if data['username'] == 'minumtium':
+                self.data.append({'id': '2',
+                                  'username': 'minumtium',
+                                  'encrypted_password': '$2b$14$WPJmYmygdinbCJ3V4.N/c.X8llM3aTYlKs5gKFIalKq0rK7B1.R.i'})
+                return '2'
             return '0'
 
         def delete(self, id: str):
