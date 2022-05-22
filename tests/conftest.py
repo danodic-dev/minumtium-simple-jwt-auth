@@ -23,6 +23,9 @@ def users_database_adapter(users_database_data):
         def all(self):
             return self.data
 
+        def find_by_id(self, id: str) -> Dict:
+            return self.find_by_criteria({'id': id})[0]
+
         def find_by_criteria(self, criteria: Dict) -> List[Dict]:
             for user in self.data:
                 for field, value in criteria.items():
