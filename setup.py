@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="minumtium_simple_jwt_auth",
-    version="1.0.1",
+    version="1.1.0",
     author="Danilo Guimaraes (danodic)",
     author_email="danilo@danodic.dev",
     description="A JWT token adapter for the minumtium library.",
