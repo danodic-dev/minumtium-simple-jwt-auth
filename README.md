@@ -27,10 +27,10 @@ Then, provide it to your minumtium Idm service:
 ```python
 from minumtium.modules.idm import IdmService, UserRepository
 from minumtium_sql_alchemy_adapter import SqlAlchemyAdapter
-from minumtium_simple_jwt_auth import SimpleJwtAuthentication
+from minumtium_simple_jwt_auth import MinumtiumSimpleJwtAuthentication
 
 db_adapter = SqlAlchemyAdapter({'engine': 'sqlite_memory'}, 'posts')
-auth_adapter = SimpleJwtAuthentication(configuration={
+auth_adapter = MinumtiumSimpleJwtAuthentication(configuration={
     'jwt_key': 'not a reliable key, change that quickly',
     'session_duration_hours': 1})
 

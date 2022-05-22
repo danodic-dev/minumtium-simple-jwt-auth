@@ -3,9 +3,10 @@ from datetime import datetime, timedelta
 import jwt
 import pytest
 from minumtium.infra.authentication import AuthenticationException
-from minumtium.modules.idm import UserRepository, Session, MAX_LOGIN_TRIALS, LOGIN_COOLDOWN_MINUTES
+from minumtium.infra.database import DatabaseAdapter
+from minumtium.modules.idm import Session, MAX_LOGIN_TRIALS, LOGIN_COOLDOWN_MINUTES
 
-from minumtium_simple_jwt_auth import SimpleJwtAuthentication
+from minumtium_simple_jwt_auth import MinumtiumSimpleJwtAuthentication, MinumtiumSimpleJwtAuthenticationConfig
 
 
 def test_validate_token(secret_key, auth_adapter):
@@ -53,9 +54,9 @@ def test_authenticate(secret_key, auth_adapter):
     assert decoded_token['userid'] == '0'
 
     parsed_date = datetime.strptime(
-        decoded_token['expiration_date'], SimpleJwtAuthentication.SESSION_DURATION_FORMAT)
+        decoded_token['expiration_date'], MinumtiumSimpleJwtAuthentication.SESSION_DURATION_FORMAT)
     assert datetime.now() + timedelta(hours=auth_adapter.session_duration) - \
-        timedelta(minutes=1) < parsed_date
+           timedelta(minutes=1) < parsed_date
 
 
 @pytest.mark.parametrize('username, password', [('valid', 'invalid'),
@@ -114,7 +115,7 @@ def test_authenticate_after_trial_timeout(auth_adapter):
         auth_adapter.authenticate('valid', 'valid')
 
     auth_adapter.trials['valid']['timestamp'] = datetime.now() - \
-        timedelta(minutes=LOGIN_COOLDOWN_MINUTES, seconds=1)
+                                                timedelta(minutes=LOGIN_COOLDOWN_MINUTES, seconds=1)
     assert not auth_adapter._is_max_trials_expired('valid')
 
 
@@ -130,20 +131,20 @@ def test_password_criteria_negatove(password, auth_adapter):
     assert not auth_adapter.is_valid_password(password)
 
 
-def test_default_username_is_created(user_repository: UserRepository, auth_adapter):
-    assert 'minumtium' in [user.username for user in user_repository.all()]
+def test_default_username_is_created(users_database_adapter: DatabaseAdapter, auth_adapter):
+    assert 'minumtium' in [user['username'] for user in users_database_adapter.all()]
 
 
 def generate_jwt_token(username: str, user_id: str, expiration: datetime, secret: str):
     return jwt.encode({
         'username': username,
         'userid': user_id,
-        'expiration_date': expiration.strftime(SimpleJwtAuthentication.SESSION_DURATION_FORMAT)
-    }, secret, algorithm=SimpleJwtAuthentication.ALGORITHM)
+        'expiration_date': expiration.strftime(MinumtiumSimpleJwtAuthentication.SESSION_DURATION_FORMAT)
+    }, secret, algorithm=MinumtiumSimpleJwtAuthentication.ALGORITHM)
 
 
 def decode_jwt_token(token: str, secret_key: str):
-    return jwt.decode(token.encode('utf-8'), secret_key, algorithms=SimpleJwtAuthentication.ALGORITHM)
+    return jwt.decode(token.encode('utf-8'), secret_key, algorithms=MinumtiumSimpleJwtAuthentication.ALGORITHM)
 
 
 @pytest.fixture()
@@ -152,12 +153,10 @@ def secret_key():
 
 
 @pytest.fixture()
-def user_repository(users_database_adapter):
-    # noinspection PyTypeChecker
-    return UserRepository(users_database_adapter)
+def auth_adapter_configuration(secret_key):
+    return MinumtiumSimpleJwtAuthenticationConfig(jwt_key=secret_key, session_duration_hours=6)
 
 
 @pytest.fixture()
-def auth_adapter(secret_key, user_repository):
-    return SimpleJwtAuthentication({'jwt_key': secret_key,
-                                    'session_duration_hours': 6}, user_repository)
+def auth_adapter(auth_adapter_configuration, users_database_adapter):
+    return MinumtiumSimpleJwtAuthentication(auth_adapter_configuration, users_database_adapter)
